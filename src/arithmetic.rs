@@ -12,10 +12,17 @@ pub(crate) use fields::*;
 
 use subtle::Choice;
 
+/// Compat
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct Compat<T>(T);
 
-impl<const N: u8, T: ff::WithSmallOrderMulGroup<N>> FieldExt for T {
+impl<T> FieldExt for T
+ where
+   T: ff::WithSmallOrderMulGroup<3>,
+   T: Ord + From<bool>,
+   T: SqrtRatio + Group<Scalar = T>,
+{
 
     /// Modulus of the field written as a string for display purposes
     const MODULUS: &'static str = <T as ff::PrimeField>::MODULUS;
@@ -30,7 +37,7 @@ impl<const N: u8, T: ff::WithSmallOrderMulGroup<N>> FieldExt for T {
     const TWO_INV: Self = <T as ff::PrimeField>::TWO_INV;
 
     /// Element of multiplicative order $3$.
-    const ZETA: Self = <T as ff::WithSmallOrderMulGroup<N>>::ZETA;
+    const ZETA: Self = <T as ff::WithSmallOrderMulGroup<3>>::ZETA;
 
     /// Obtains a field element congruent to the integer `v`.
     fn from_u128(v: u128) -> Self { <T as ff::PrimeField>::from_u128(v) }
@@ -42,7 +49,7 @@ impl<const N: u8, T: ff::WithSmallOrderMulGroup<N>> FieldExt for T {
     /// Exponentiates `self` by `by`, where `by` is a little-endian order
     /// integer exponent.
     fn pow(&self, by: &[u64; 4]) -> Self {
-        let mut res = Self::one();
+        let mut res = Self::ONE;
         for e in by.iter().rev() {
             for i in (0..64).rev() {
                 res = res.square();
@@ -81,8 +88,10 @@ pub trait Group: Copy + Clone + Send + Sync + 'static {
     fn group_scale(&mut self, by: &Self::Scalar);
 }
 
-impl<T: ff::PrimeField> Group for T {
+/*
+impl<T: ff::PrimeField> SqrtRatio for T {
 }
+*/
 
 /// A trait that exposes additional operations related to calculating square roots of
 /// prime-order finite fields.
@@ -101,8 +110,10 @@ pub trait SqrtRatio: ff::PrimeField {
     /// canonically.
     fn get_lower_32(&self) -> u32 { unimplemented!() }
 
+    /// sqrt ratio
     fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) { <Self as ff::Field>::sqrt_ratio(num, div) }
 
+    /// sqrt alt
     fn sqrt_alt(&self) -> (Choice, Self) { <Self as ff::Field>::sqrt_alt(self) }
 }
 
@@ -136,7 +147,7 @@ pub trait FieldExt: SqrtRatio + From<bool> + Ord + Group<Scalar = Self> {
     /// Exponentiates `self` by `by`, where `by` is a little-endian order
     /// integer exponent.
     fn pow(&self, by: &[u64; 4]) -> Self {
-        let mut res = Self::one();
+        let mut res = Self::ONE;
         for e in by.iter().rev() {
             for i in (0..64).rev() {
                 res = res.square();
