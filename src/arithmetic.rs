@@ -10,30 +10,30 @@ mod fields;
 pub use curves::*;
 pub(crate) use fields::*;
 
+use subtle::Choice;
+
 #[repr(transparent)]
 pub struct Compat<T>(T);
 
-use ff::PrimeField;
-
-impl<const N: u8, T: WithSmallOrderMulGroup<const N: u8> FieldExt for T {
+impl<const N: u8, T: ff::WithSmallOrderMulGroup<N>> FieldExt for T {
 
     /// Modulus of the field written as a string for display purposes
-    const MODULUS: &'static str = <T as PrimeField>::MODULUS;
+    const MODULUS: &'static str = <T as ff::PrimeField>::MODULUS;
 
     /// Inverse of `PrimeField::root_of_unity()`
-    const ROOT_OF_UNITY_INV: Self = <T as PrimeField>::ROOT_OF_UNITY_INV;
+    const ROOT_OF_UNITY_INV: Self = <T as ff::PrimeField>::ROOT_OF_UNITY_INV;
 
     /// Generator of the $t-order$ multiplicative subgroup
-    const DELTA: Self = <T as PrimeField>::DELTA;
+    const DELTA: Self = <T as ff::PrimeField>::DELTA;
 
     /// Inverse of $2$ in the field.
-    const TWO_INV: Self = <T as PrimeField>::TWO_INV;
+    const TWO_INV: Self = <T as ff::PrimeField>::TWO_INV;
 
     /// Element of multiplicative order $3$.
-    const ZETA: Self = <T as WithSmallOrderMulGroup<N>>::ZETA;
+    const ZETA: Self = <T as ff::WithSmallOrderMulGroup<N>>::ZETA;
 
     /// Obtains a field element congruent to the integer `v`.
-    fn from_u128(v: u128) -> Self = <T as PrimeField>::from_u128(v);
+    fn from_u128(v: u128) -> Self { <T as ff::PrimeField>::from_u128(v) }
 
     /// Obtains a field element that is congruent to the provided little endian
     /// byte representation of an integer.
@@ -99,11 +99,11 @@ pub trait SqrtRatio: ff::PrimeField {
 
     /// Gets the lower 32 bits of this field element when expressed
     /// canonically.
-    fn get_lower_32(&self) -> u32 = { unimplemented!() }
+    fn get_lower_32(&self) -> u32 { unimplemented!() }
 
-    fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) { <T as ff::Field>::sqrt_ratio(num, div) }
+    fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) { <Self as ff::Field>::sqrt_ratio(num, div) }
 
-    fn sqrt_alt(&self) -> (Choice, Self) { <T as ff::Field>::sqrt_alt(self) }
+    fn sqrt_alt(&self) -> (Choice, Self) { <Self as ff::Field>::sqrt_alt(self) }
 }
 
 
